@@ -1,0 +1,4 @@
+.venv
+*.pyc
+type_report.json
+
