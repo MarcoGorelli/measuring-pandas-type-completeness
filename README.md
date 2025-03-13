@@ -12,18 +12,12 @@ Usage:
    for how to do that.
 5. Run `python inline_pandas_stubs.py` with your virtual environment activated.
 6. Install `pyright` and `marimo` into your virtual environment.
+7. Run `git clone https://github.com/pandas-dev/pandas.git pandas-dev --depth=1`
+8. Run `python list_public_methods.py`. This will generate `public_methods.csv` with
+   the public  methods from the pandas API.
 7. Run `pyright --verifytypes pandas --ignoreexternal --outputjson > type_report.json`
-8. Install `marimo edit analysis.py`.
+8. Run `marimo edit analysis.py`.
 
-Notes:
-- There's a lot of false positives because `Series` is often used internally
-  in pandas-stubs as opposed to `Series[Any]`. Issue: https://github.com/pandas-dev/pandas-stubs/issues/1133
-- PyRight includes all exported modules, including those that pandas considers private. Examples are:
-  - `base` files (contain objects meant to be subclassed and are not directly user-facing)
-  - `tests` (definitely not user-facing)
-
-Once pandas-stubs #1133 is addressed, then the report may be more useful. Currently,
-it is riddled with "type is unknown" just because the generic type of `Series` is not
-specified. However, the `analysis.py` file does at least give us the means to find
-public-facing methods where type annotations are missing completely.
+At the end of the Marimo notebook, there's a cell showing which public functions
+in pandas has missing types.
 

@@ -1,4 +1,7 @@
 .venv
 *.pyc
 type_report.json
+*.csv
+pandas-dev
+
 

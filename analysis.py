@@ -33,7 +33,7 @@ def _(df):
 
 @app.cell
 def _():
-    with open("../pandas-dev/public_methods.csv") as _fd:
+    with open("public_methods.csv") as _fd:
         content_list = _fd.read().splitlines(keepends=False)
     public_methods = " or ".join([f"name like '%.{x}'" for x in content_list])
     public_methods[:100]
