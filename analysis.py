@@ -19,15 +19,53 @@ def _(content):
     import duckdb
 
     symbols = content["typeCompleteness"]["symbols"]
-    df = pl.DataFrame(symbols).with_columns(
-        pl.col("diagnostics").cast(pl.List(pl.String)).list.join(",")
+    df = (
+        pl.DataFrame(symbols)
+        .filter(
+            pl.col("isExported"),
+            ~pl.col("name").str.starts_with("pandas.tests"),
+            ~pl.col("name").str.starts_with("pandas.core.internals"),
+        )
+        .drop("isExported")
+        .with_columns(
+            pl.col("diagnostics").cast(pl.List(pl.String)).list.join(",")
+        )
+        .with_columns(
+            alternateNames=pl.concat_list(
+                pl.col("alternateNames").fill_null(pl.lit([])),
+                pl.concat_list("name"),
+            )
+        )
+        .drop("isTypeAmbiguous")
+        .with_columns(
+            pl.col("alternateNames").list.eval(
+                pl.element().str.strip_prefix("pandas.core.frame.")
+            ),
+        )
+        .with_columns(
+            pl.col("alternateNames").list.eval(
+                pl.element().str.strip_prefix("pandas.core.series.")
+            ),
+        )
     )
     return df, duckdb, pl, symbols
 
 
 @app.cell
+def _(df, pl):
+    df.filter(pl.col("alternateNames").list.join(",").str.contains("set_axis"))
+    return
+
+
+@app.cell
 def _(df):
-    df.head()
+    df
+    return
+
+
+@app.cell
+def _(content_list):
+    [x for x in content_list if "set_axis" in x]
     return
 
 
@@ -41,36 +79,20 @@ def _():
 
 
 @app.cell
-def _(df, duckdb, public_methods):
-    duckdb.sql(f"""
-    from df lhs
-    select name
-    -- anything in base in meant to be subclassed
-    where ({public_methods})
-    and name not like '%tests%'
-    and name not like '%plotting%'
-    and name not like '%internals%'
-    and category != 'variable'
-    and isExported
-    and not isTypeKnown
-    and diagnostics like '% is missing%'
-    """)
-    return
+def _(content_list, df, pl):
+    public_df = df.filter(
+        pl.col("alternateNames")
+        .list.eval(pl.element().is_in(content_list))
+        .list.any(),
+        ~pl.col("category").is_in(["class", "variable"]),
+    )
+    public_df.head()
+    return (public_df,)
 
 
 @app.cell
-def _(df, duckdb, public_methods):
-    duckdb.sql(f"""
-    from df
-    select avg(cast(isTypeKnown as int64))
-    -- anything in base in meant to be subclassed
-    where ({public_methods})
-    and name not like '%tests%'
-    and name not like '%plotting%'
-    and name not like '%internals%'
-    and category != 'variable'
-    and isExported
-    """)
+def _(pl, public_df):
+    public_df.filter(~pl.col("isTypeKnown"))
     return
 
 

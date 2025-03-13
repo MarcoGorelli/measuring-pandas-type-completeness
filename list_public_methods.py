@@ -16,7 +16,7 @@ def extract_autosummary_methods(file, content):
             continue
         method = line.lstrip()
         if in_autosummary and not method.startswith(':'):
-            methods.append(f'{file.split(".")[0]}.{method}')
+            methods.append(method)
     return methods
 
 
