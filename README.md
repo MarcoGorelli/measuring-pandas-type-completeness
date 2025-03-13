@@ -21,3 +21,6 @@ Usage:
 At the end of the Marimo notebook, there's a cell showing which public functions
 in pandas has missing types.
 
+Limitations:
+- StringMethods (e.g. `Series.str.upper`) are incorrectly flagged as "type unknown"
+

@@ -9,16 +9,16 @@ def _():
     import json
 
     with open("type_report.json") as fd:
-        content = json.load(fd)
-    return content, fd, json
+        type_report = json.load(fd)
+    return fd, json, type_report
 
 
 @app.cell
-def _(content):
+def _(type_report):
     import polars as pl
     import duckdb
 
-    symbols = content["typeCompleteness"]["symbols"]
+    symbols = type_report["typeCompleteness"]["symbols"]
     df = (
         pl.DataFrame(symbols)
         .filter(
@@ -47,6 +47,7 @@ def _(content):
                 pl.element().str.strip_prefix("pandas.core.series.")
             ),
         )
+        .with_columns(name=pl.col("alternateNames").list.first())
     )
     return df, duckdb, pl, symbols
 
@@ -64,25 +65,17 @@ def _(df):
 
 
 @app.cell
-def _(content_list):
-    [x for x in content_list if "set_axis" in x]
-    return
-
-
-@app.cell
 def _():
     with open("public_methods.csv") as _fd:
-        content_list = _fd.read().splitlines(keepends=False)
-    public_methods = " or ".join([f"name like '%.{x}'" for x in content_list])
-    public_methods[:100]
-    return content_list, public_methods
+        public_methods = _fd.read().splitlines(keepends=False)
+    return (public_methods,)
 
 
 @app.cell
-def _(content_list, df, pl):
+def _(df, pl, public_methods):
     public_df = df.filter(
         pl.col("alternateNames")
-        .list.eval(pl.element().is_in(content_list))
+        .list.eval(pl.element().is_in(public_methods))
         .list.any(),
         ~pl.col("category").is_in(["class", "variable"]),
     )
@@ -92,7 +85,7 @@ def _(content_list, df, pl):
 
 @app.cell
 def _(pl, public_df):
-    public_df.filter(~pl.col("isTypeKnown"))
+    public_df.filter(~pl.col("isTypeKnown")).drop("diagnostics")
     return
 
 
