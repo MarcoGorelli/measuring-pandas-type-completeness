@@ -11,7 +11,7 @@ Usage:
 4. Install pandas nightly. See https://pandas.pydata.org/docs/getting_started/install.html
    for how to do that.
 5. Run `python inline_pandas_stubs.py` with your virtual environment activated.
-6. Install `pyright` and `marimo` into your virtual environment.
+6. Install `pyright`, `polars`, and `marimo` into your virtual environment.
 7. Run `git clone https://github.com/pandas-dev/pandas.git pandas-dev --depth=1`
 8. Run `python list_public_methods.py`. This will generate `public_methods.csv` with
    the public  methods from the pandas API.
