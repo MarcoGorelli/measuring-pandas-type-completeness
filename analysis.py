@@ -27,41 +27,50 @@ def _(content):
 
 @app.cell
 def _(df):
-    df
+    df.head()
     return
 
 
 @app.cell
-def _(df, duckdb):
-    duckdb.sql("""
-    from df
-    select avg(cast(isTypeKnown as int64))
-    where name not like 'pandas.%.base.%'
-    and name not like 'pandas.tests.%'
+def _():
+    with open("../pandas-dev/public_methods.csv") as _fd:
+        content_list = _fd.read().splitlines(keepends=False)
+    public_methods = " or ".join([f"name like '%.{x}'" for x in content_list])
+    public_methods[:100]
+    return content_list, public_methods
+
+
+@app.cell
+def _(df, duckdb, public_methods):
+    duckdb.sql(f"""
+    from df lhs
+    select name
+    -- anything in base in meant to be subclassed
+    where ({public_methods})
+    and name not like '%tests%'
+    and name not like '%plotting%'
+    and name not like '%internals%'
+    and category != 'variable'
     and isExported
+    and not isTypeKnown
+    and diagnostics like '% is missing%'
     """)
     return
 
 
 @app.cell
-def _(df, duckdb):
-    duckdb.sql("""
+def _(df, duckdb, public_methods):
+    duckdb.sql(f"""
     from df
-    select name
+    select avg(cast(isTypeKnown as int64))
     -- anything in base in meant to be subclassed
-    where name not like 'pandas.%.base.%'
-    -- ignore tests
-    and name not like 'pandas.tests.%'
+    where ({public_methods})
+    and name not like '%tests%'
+    and name not like '%plotting%'
+    and name not like '%internals%'
+    and category != 'variable'
     and isExported
-    and not isTypeKnown
-    and diagnostics like '% is missing%'
-    """).pl()
-    return
-
-
-@app.cell
-def _(symbols):
-    [x for x in symbols if "DataFrame.insert" in x["name"]]
+    """)
     return
 
 
