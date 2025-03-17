@@ -50,48 +50,8 @@ def _(rel, symbols_df):
         *,
         list_first(alternateNames) as name
     """)
-    df = rel.pl()
-    df
-    return df, duckdb, rel
-
-
-@app.cell
-def _():
-    # import polars as pl
-    # import duckdb
-
-    # symbols = type_report["typeCompleteness"]["symbols"]
-    # df = (
-    #     pl.DataFrame(symbols)
-    #     .filter(
-    #         pl.col("isExported"),
-    #         ~pl.col("name").str.starts_with("pandas.tests"),
-    #         ~pl.col("name").str.starts_with("pandas.core.internals"),
-    #     )
-    #     .drop("isExported")
-    #     .with_columns(
-    #         pl.col("diagnostics").cast(pl.List(pl.String)).list.join(",")
-    #     )
-    #     .with_columns(
-    #         alternateNames=pl.concat_list(
-    #             pl.col("alternateNames").fill_null(pl.lit([])),
-    #             pl.concat_list("name"),
-    #         )
-    #     )
-    #     .drop("isTypeAmbiguous")
-    #     .with_columns(
-    #         pl.col("alternateNames").list.eval(
-    #             pl.element().str.strip_prefix("pandas.core.frame.")
-    #         ),
-    #     )
-    #     .with_columns(
-    #         pl.col("alternateNames").list.eval(
-    #             pl.element().str.strip_prefix("pandas.core.series.")
-    #         ),
-    #     )
-    #     .with_columns(name=pl.col("alternateNames").list.first())
-    # )
-    return
+    rel
+    return duckdb, rel
 
 
 @app.cell
@@ -114,20 +74,24 @@ def _(public_methods):
 
 
 @app.cell
-def _(df, pl, public_methods):
-    public_df = df.filter(
-        pl.col("alternateNames")
-        .list.eval(pl.element().is_in(public_methods))
-        .list.any(),
-        ~pl.col("category").is_in(["class", "variable"]),
-    )
-    public_df.head()
-    return (public_df,)
+def _(duckdb, public_methods, rel):
+    public_rel = duckdb.sql(f"""
+    from rel
+    select *
+    where list_bool_or([x in ({",".join([f"'{x}'" for x in public_methods])}) for x in alternateNames])
+    """)
+    return (public_rel,)
 
 
 @app.cell
-def _(pl, public_df):
-    public_df.filter(~pl.col("isTypeKnown")).drop("diagnostics")
+def _(duckdb, rel):
+    duckdb.sql(
+        """
+        from rel
+        select * exclude(diagnostics)
+        where not isTypeKnown
+        """
+    )
     return
 
 
