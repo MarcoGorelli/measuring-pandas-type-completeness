@@ -36,9 +36,9 @@ def _(rel, symbols_df):
         and not starts_with(name, 'pandas.tests')
         and not starts_with(name, 'pandas.core.internals')
         and not starts_with(name, 'pandas.util')
-        and name not in ('class', 'variable')
+        and category not in ('class', 'variable')
     """)
-    rel = duckdb.sql("""
+    rel = duckdb.sql(r"""
     from rel
     select
         * exclude (alternateNames),
@@ -52,12 +52,6 @@ def _(rel, symbols_df):
     """)
     rel
     return duckdb, rel
-
-
-@app.cell
-def _(df):
-    df
-    return
 
 
 @app.cell
@@ -84,14 +78,36 @@ def _(duckdb, public_methods, rel):
 
 
 @app.cell
-def _(duckdb, rel):
+def _(duckdb, public_rel):
     duckdb.sql(
         """
-        from rel
+        from public_rel
         select * exclude(diagnostics)
         where not isTypeKnown
         """
+    ).pl()
+    return
+
+
+@app.cell
+def _(symbols):
+    [x for x in symbols if "Series.mean" in x["name"]]
+    return
+
+
+@app.cell
+def _(duckdb, public_rel):
+    duckdb.sql(
+        """
+        from public_rel
+        select mean(cast(isTypeKnown as int64))
+        """
     )
+    return
+
+
+@app.cell
+def _():
     return
 
 
